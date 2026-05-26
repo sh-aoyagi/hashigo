@@ -178,14 +178,22 @@
     }
     @keyframes blink { 50% { opacity: 0; } }
 
-    .store-desc { opacity: 0.82; margin-bottom: 18px; font-size: 14px; line-height: 1.6; }
-    .action-title { font-size: 28px; font-weight: 900; margin-bottom: 18px; letter-spacing: 0.03em; }
-    .action-buttons { display: flex; flex-direction: column; width: 100%; max-width: 300px; gap: 12px; margin: 0 auto; }
-    .action-btn { padding: 16px; font-size: 18px; font-weight: 900; background: white; color: black; }
-    .ghost { background: rgba(255,255,255,0.10); color: white; border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(8px); }
+    .store-desc { opacity: 0.72; margin-bottom: 10px; font-size: 13px; line-height: 1.6; }
+    .store-details { margin-bottom: 16px; display: flex; flex-direction: column; gap: 6px; }
+    .store-detail-row { font-size: 13px; opacity: 0.82; display: flex; align-items: center; gap: 6px; }
+    .store-detail-row a { color: var(--neon-blue); text-decoration: none; }
 
-    .message { margin-top: 24px; font-size: 22px; font-weight: 900; color: var(--accent); min-height: 34px; text-shadow: 0 0 10px rgba(255,207,110,0.18); }
-    .share-row { display: flex; gap: 10px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+    .action-title { font-size: 22px; font-weight: 900; margin-bottom: 14px; letter-spacing: 0.03em; }
+    .action-buttons { display: flex; flex-direction: column; width: 100%; max-width: 300px; gap: 10px; margin: 0 auto; }
+    .action-btn {
+      display: block; padding: 15px 16px; font-size: 17px; font-weight: 900;
+      background: white; color: black; text-decoration: none; text-align: center;
+      cursor: pointer;
+    }
+    .ghost { background: rgba(255,255,255,0.10); color: white; border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(8px); }
+    .tel-btn { background: var(--neon-green); color: #0b0b12; }
+
+    .share-row { display: flex; gap: 10px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
     .share-btn { padding: 10px 14px; background: rgba(255,255,255,0.08); color: white; border: 1px solid rgba(255,255,255,0.10); font-weight: 800; }
 
     @media (max-width: 420px) {
@@ -234,16 +242,16 @@
         <div class="result-card">
           <div class="typing-line" id="typing-line"></div>
           <div class="store-desc" id="store-desc"></div>
-          <div class="action-title">…行っちゃう？</div>
+          <div class="store-details" id="store-details"></div>
+          <div class="action-title">どうする？</div>
           <div class="action-buttons">
-            <a id="go-btn" class="action-btn" href="#" target="_blank" rel="noopener">行っちゃう</a>
+            <a id="btn-tel"     class="action-btn tel-btn" href="#" style="display:none">📞 電話して予約</a>
+            <a id="btn-map"     class="action-btn" href="#" target="_blank" rel="noopener">🗺 地図で開く</a>
+            <a id="btn-tabelog" class="action-btn ghost" href="#" target="_blank" rel="noopener">🍽 食べログで見る</a>
             <button class="action-btn ghost" onclick="retry()">やり直す</button>
           </div>
-          <div class="message" id="message"></div>
           <div class="share-row">
-            <button class="share-btn" onclick="shareResult('X')">X</button>
-            <button class="share-btn" onclick="shareResult('Instagram')">Instagram</button>
-            <button class="share-btn" onclick="shareResult('Threads')">Threads</button>
+            <button class="share-btn" onclick="shareResult()">X でシェア</button>
           </div>
         </div>
       </div>
@@ -344,11 +352,13 @@
         const places = data.elements
           .filter(e => e.tags?.name)
           .map(e => ({
-            name: e.tags.name,
-            type: e.tags.amenity,
-            lat:  e.lat,
-            lon:  e.lon,
-            dist: calcDist(lat, lon, e.lat, e.lon)
+            name:    e.tags.name,
+            type:    e.tags.amenity,
+            lat:     e.lat,
+            lon:     e.lon,
+            dist:    calcDist(lat, lon, e.lat, e.lon),
+            phone:   e.tags.phone || e.tags['contact:phone'] || null,
+            address: [e.tags['addr:street'], e.tags['addr:housenumber']].filter(Boolean).join(' ') || null,
           }));
         cachedPlaces = places;
         return places;
@@ -472,15 +482,45 @@
           : `${type}で選出（デモモード）`;
         storeDesc.innerText = label;
         animateTyping(currentStore.name);
-        // 食べログ検索URLを行っちゃうボタンに直接セット（iOS Safari対応）
-        const tabelogUrl = `https://tabelog.com/rstLst/food/${encodeURIComponent(currentStore.name)}/`;
-        document.getElementById('go-btn').href = tabelogUrl;
+
+        // 店舗詳細を表示
+        const details = document.getElementById('store-details');
+        details.innerHTML = '';
+        if (currentStore.address) {
+          details.innerHTML += `<div class="store-detail-row">📍 ${currentStore.address}</div>`;
+        }
+        if (currentStore.phone) {
+          details.innerHTML += `<div class="store-detail-row">📞 <a href="tel:${currentStore.phone.replace(/[^\d+]/g,'')}">${currentStore.phone}</a></div>`;
+        }
+
+        // 電話ボタン（番号があるときだけ表示）
+        const telBtn = document.getElementById('btn-tel');
+        if (currentStore.phone) {
+          telBtn.href = `tel:${currentStore.phone.replace(/[^\d+]/g,'')}`;
+          telBtn.style.display = 'block';
+        } else {
+          telBtn.style.display = 'none';
+        }
+
+        // 地図ボタン — Apple Maps URL（iOS でネイティブアプリが直接開く・popupなし）
+        const mapBtn = document.getElementById('btn-map');
+        const mapQ = encodeURIComponent(currentStore.name);
+        mapBtn.href = currentStore.lat
+          ? `https://maps.apple.com/?q=${mapQ}&sll=${currentStore.lat},${currentStore.lon}&z=17`
+          : `https://maps.apple.com/?q=${mapQ}`;
+
+        // 食べログボタン
+        document.getElementById('btn-tabelog').href =
+          `https://tabelog.com/rstLst/food/${encodeURIComponent(currentStore.name)}/`;
       }, 2100);
     }
 
     // ── 行っちゃう ──
-    function goStore() {
-      // 使わないが残しておく（a タグに移行済み）
+    function shareResult() {
+      const text = `【はしご酒ルーレット】${currentStore?.name || '次の店'} に行ってきます🍺`;
+      const url = location.href;
+      if (navigator.share) { navigator.share({ title: 'はしご酒ルーレット', text, url }).catch(() => {}); return; }
+      location.href = `https://x.com/intent/tweet?text=${encodeURIComponent(text + '\n' + url)}`;
     }
 
     // ── やり直す ──
@@ -494,12 +534,6 @@
     }
 
     // ── シェア ──
-    function shareResult(platform) {
-      const text = `【はしご酒ルーレット】${currentStore?.name || '次の店'} に行ってきます🍺`;
-      const url = location.href;
-      if (navigator.share) { navigator.share({ title: 'はしご酒ルーレット', text, url }).catch(() => {}); return; }
-      window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text + '\n' + url)}`, '_blank');
-    }
 
     // ── 起動時：位置情報を先取り ──
     (async () => {
