@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>はしご酒ルーレット</title>
+  <style>
+    :root {
+      --bg: #0b0b12;
+      --panel: rgba(255,255,255,0.08);
+      --panel-strong: rgba(255,255,255,0.14);
+      --text: #f7f7fb;
+      --accent: #ffcf6e;
+      --neon-pink: #ff4fd8;
+      --neon-blue: #54d7ff;
+      --neon-green: #7dff9e;
+      --shadow: 0 0 12px rgba(255,255,255,0.16), 0 0 24px rgba(255, 79, 216, 0.16), 0 0 34px rgba(84, 215, 255, 0.12);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
+    }
+
+    body {
+      background:
+        radial-gradient(circle at top, rgba(84,215,255,0.14), transparent 22%),
+        radial-gradient(circle at 80% 10%, rgba(255,79,216,0.13), transparent 18%),
+        radial-gradient(circle at center bottom, rgba(125,255,158,0.08), transparent 20%),
+        linear-gradient(180deg, #0b0b12 0%, #101018 45%, #09090f 100%);
+      color: var(--text);
+      overflow: hidden;
+      height: 100vh;
+      position: relative;
+    }
+
+    .background-comments {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .comment {
+      position: absolute;
+      white-space: nowrap;
+      font-size: 14px;
+      opacity: 0.16;
+      color: rgba(255,255,255,0.9);
+      animation: flow linear infinite;
+      text-shadow: 0 0 8px rgba(255,255,255,0.08);
+    }
+
+    @keyframes flow {
+      from { transform: translateX(110vw); }
+      to   { transform: translateX(-120vw); }
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      padding: 20px;
+      text-align: center;
+      backdrop-filter: blur(2px);
+    }
+
+    .screen {
+      width: 100%;
+      max-width: 420px;
+    }
+
+    .home-wrap,
+    .roulette-screen,
+    .result-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      width: 100%;
+    }
+
+    .home-wrap.active,
+    .roulette-screen.active,
+    .result-screen.active {
+      display: flex;
+    }
+
+    .logo {
+      font-size: clamp(34px, 10vw, 46px);
+      font-weight: 900;
+      line-height: 1.05;
+      margin-bottom: 14px;
+      letter-spacing: 0.04em;
+      color: #ffffff;
+      text-shadow:
+        0 0 6px rgba(255,255,255,0.35),
+        0 0 16px rgba(84,215,255,0.28),
+        0 0 28px rgba(255,79,216,0.22),
+        0 0 42px rgba(255,207,110,0.16);
+      animation: neonFlicker 3.2s infinite;
+      transform-origin: center;
+    }
+
+    .logo .line {
+      display: inline-block;
+      position: relative;
+    }
+
+    .logo .line::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 2px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.9), transparent);
+      filter: blur(1px);
+      opacity: 0.7;
+      animation: neonScan 2.4s infinite linear;
+    }
+
+    @keyframes neonFlicker {
+      0%, 18%, 22%, 35%, 38%, 100% { opacity: 1; filter: brightness(1); }
+      19%, 21%, 36%, 37% { opacity: 0.72; filter: brightness(1.12); }
+      60% { opacity: 0.9; filter: brightness(1.02); }
+      62% { opacity: 0.55; }
+      64% { opacity: 1; }
+    }
+
+    @keyframes neonScan {
+      0% { transform: translateX(-100%); opacity: 0; }
+      20% { opacity: 0.75; }
+      50% { opacity: 0.55; }
+      100% { transform: translateX(100%); opacity: 0; }
+    }
+
+    .catch {
+      font-size: 16px;
+      color: var(--accent);
+      margin-bottom: 12px;
+      font-weight: 800;
+      text-shadow: 0 0 12px rgba(255,207,110,0.18);
+    }
+
+    .sub {
+      font-size: 14px;
+      opacity: 0.72;
+      margin-bottom: 18px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      width: 100%;
+      max-width: 340px;
+      margin-bottom: 28px;
+    }
+
+    .roulette-btn,
+    .action-btn,
+    .share-btn {
+      border: none;
+      border-radius: 18px;
+      cursor: pointer;
+      transition: 0.15s ease;
+      box-shadow: 0 8px 26px rgba(0,0,0,0.32);
+    }
+
+    .roulette-btn {
+      padding: 22px 10px;
+      font-size: 20px;
+      font-weight: 900;
+      color: white;
+      background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06));
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.10);
+    }
+
+    .roulette-btn:active,
+    .action-btn:active,
+    .share-btn:active { transform: scale(0.96); }
+
+    .sns {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      opacity: 0.84;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .sns span,
+    .pill {
+      border: 1px solid rgba(255,255,255,0.14);
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.05);
+      box-shadow: inset 0 0 12px rgba(255,255,255,0.03);
+    }
+
+    .roulette-screen { gap: 18px; }
+
+    .roulette-ui {
+      width: min(82vw, 320px);
+      aspect-ratio: 1 / 1;
+      position: relative;
+      margin: 0 auto;
+      filter: drop-shadow(0 20px 36px rgba(0,0,0,0.45));
+    }
+
+    .roulette-pointer {
+      position: absolute;
+      top: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 14px solid transparent;
+      border-right: 14px solid transparent;
+      border-bottom: 26px solid #ffffff;
+      z-index: 5;
+      filter: drop-shadow(0 0 10px rgba(255,255,255,0.3));
+    }
+
+    .roulette-wheel {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at center, rgba(255,255,255,0.9) 0 10%, transparent 11%),
+        conic-gradient(
+          from -18deg,
+          #ff4fd8 0 25%,
+          #54d7ff 25% 50%,
+          #ffcf6e 50% 75%,
+          #7dff9e 75% 100%
+        );
+      border: 12px solid rgba(255,255,255,0.9);
+      box-shadow: inset 0 0 18px rgba(0,0,0,0.24), 0 0 28px rgba(84,215,255,0.12);
+      transform: rotate(0deg);
+      overflow: hidden;
+    }
+
+    .roulette-wheel::before {
+      content: "";
+      position: absolute;
+      inset: 12px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at center, rgba(15,15,22,0.92) 0 25%, transparent 25.5%),
+        radial-gradient(circle at center, rgba(255,255,255,0.08), transparent 65%);
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.3);
+    }
+
+    .roulette-wheel::after {
+      content: "DART";
+      position: absolute;
+      inset: 50% auto auto 50%;
+      transform: translate(-50%, -50%);
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: 0.18em;
+      color: rgba(255,255,255,0.95);
+      text-shadow: 0 0 8px rgba(255,255,255,0.35), 0 0 16px rgba(255,79,216,0.35);
+      z-index: 2;
+    }
+
+    .dart-hit {
+      position: absolute;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 16px;
+      height: 16px;
+      background: #fff;
+      border-radius: 50%;
+      opacity: 0;
+      z-index: 6;
+      box-shadow: 0 0 18px rgba(255,255,255,0.8);
+    }
+
+    .dart-hit.show { animation: dartHit 420ms ease-out forwards; }
+
+    @keyframes dartHit {
+      0% { opacity: 0; transform: translateX(-50%) scale(0.2); }
+      50% { opacity: 1; transform: translateX(-50%) scale(1.4); }
+      100% { opacity: 1; transform: translateX(-50%) scale(1); }
+    }
+
+    .roulette-status { font-size: 14px; opacity: 0.75; }
+    .roulette-label { font-size: 22px; font-weight: 900; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.14); }
+
+    .roulette-spin {
+      animation: wheelSpin 1.8s cubic-bezier(0.12, 0.74, 0.12, 1) forwards;
+    }
+
+    @keyframes wheelSpin {
+      0%   { transform: rotate(0deg); }
+      70%  { transform: rotate(1360deg); }
+      86%  { transform: rotate(1495deg); }
+      94%  { transform: rotate(1542deg); }
+      100% { transform: rotate(var(--final-rotation, 1575deg)); }
+    }
+
+    .result-card {
+      width: 100%;
+      max-width: 360px;
+      padding: 18px 16px 20px;
+      border-radius: 24px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+      box-shadow: 0 14px 38px rgba(0,0,0,0.35);
+      backdrop-filter: blur(10px);
+    }
+
+    .typing-line {
+      min-height: 42px;
+      font-size: 34px;
+      font-weight: 900;
+      letter-spacing: 0.02em;
+      margin-bottom: 8px;
+      text-shadow: 0 0 8px rgba(255,255,255,0.18), 0 0 20px rgba(84,215,255,0.16);
+    }
+
+    .typing-line .cursor {
+      display: inline-block;
+      width: 10px;
+      margin-left: 4px;
+      color: var(--accent);
+      animation: blink 0.9s steps(1) infinite;
+    }
+
+    @keyframes blink { 50% { opacity: 0; } }
+
+    .store-desc { opacity: 0.82; margin-bottom: 18px; font-size: 15px; line-height: 1.6; }
+
+    .action-title { font-size: 28px; font-weight: 900; margin-bottom: 18px; letter-spacing: 0.03em; text-shadow: 0 0 12px rgba(255,255,255,0.14); }
+
+    .action-buttons {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      max-width: 300px;
+      gap: 12px;
+      margin: 0 auto;
+    }
+
+    .action-btn { padding: 16px; font-size: 18px; font-weight: 900; background: white; color: black; }
+    .ghost { background: rgba(255,255,255,0.10); color: white; border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(8px); }
+
+    .message { margin-top: 24px; font-size: 22px; font-weight: 900; color: var(--accent); min-height: 34px; text-shadow: 0 0 10px rgba(255,207,110,0.18); }
+
+    .share-row { display: flex; gap: 10px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+    .share-btn { padding: 10px 14px; background: rgba(255,255,255,0.08); color: white; border: 1px solid rgba(255,255,255,0.10); font-weight: 800; }
+
+    @media (max-width: 420px) {
+      .grid { gap: 10px; }
+      .roulette-btn { font-size: 18px; }
+      .typing-line { font-size: 30px; }
+      .action-title { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="background-comments" id="comments"></div>
+
+  <div class="container">
+    <div class="screen">
+      <div id="home-screen" class="home-wrap active">
+        <div class="logo"><span class="line">はしご酒<br>ルーレット</span></div>
+        <div class="catch">今日はここでは終われないだろ！？</div>
+        <div class="sub">何で決める？</div>
+        <div class="grid">
+          <button class="roulette-btn" onclick="startRoulette('距離')">距離</button>
+          <button class="roulette-btn" onclick="startRoulette('予算')">予算</button>
+          <button class="roulette-btn" onclick="startRoulette('評価')">評価</button>
+          <button class="roulette-btn" onclick="startRoulette('汚さ')">汚さ</button>
+        </div>
+        <div class="sns">
+          <span>X</span>
+          <span>Instagram</span>
+          <span>Threads</span>
+        </div>
+      </div>
+
+      <div id="roulette-screen" class="roulette-screen">
+        <div class="roulette-label" id="roulette-label">ルーレット回転中...</div>
+        <div class="roulette-ui" aria-label="roulette">
+          <div class="roulette-pointer"></div>
+          <div class="roulette-wheel" id="roulette-wheel"></div>
+          <div class="dart-hit" id="dart-hit"></div>
+        </div>
+        <div class="roulette-status" id="roulette-status">次の店、選んでます</div>
+      </div>
+
+      <div id="result-screen" class="result-screen">
+        <div class="result-card">
+          <div class="typing-line" id="typing-line"></div>
+          <div class="store-desc" id="store-desc"></div>
+          <div class="action-title">…行っちゃう？</div>
+          <div class="action-buttons">
+            <button class="action-btn" onclick="goStore()">行っちゃう</button>
+            <button class="action-btn ghost" onclick="retry()">やり直す</button>
+          </div>
+          <div class="message" id="message"></div>
+          <div class="share-row">
+            <button class="share-btn" onclick="shareResult('X')">X</button>
+            <button class="share-btn" onclick="shareResult('Instagram')">Instagram</button>
+            <button class="share-btn" onclick="shareResult('Threads')">Threads</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const comments = [
+      'レバーで人生変わった','終電、終了','床ベタベタで草','店主クセ強',
+      'ハイボール濃すぎ','ここ焼き鳥エグい','隣のおじさん奢ってくれた',
+      'もう帰れない','3軒目からが本番','トイレ狭すぎ','常連率92%',
+      '優勝です','これが東京の夜','深夜テンション突入','明日仕事です',
+      '串がデカい','酒が止まらん','伝説始まった'
+    ];
+
+    // PoC用ダミー店データ。実運用ではGoogle Places API等の実店舗データに差し替える。
+    const stores = [
+      { name: '赤ちょうちん酒場', desc: '常連率92%・焼鳥が強い' },
+      { name: '大衆ホルモン なみだ橋', desc: '煙★★★★★' },
+      { name: '深夜立ち飲み パンチ', desc: '終電破壊度A' },
+      { name: '酒場コスモ', desc: 'ハイボール濃度バグってる' },
+      { name: 'ニュー大衆 あぶく', desc: '隣客との会話発生率高め' }
+    ];
+
+    const messages = [
+      '行っちゃう！','OK, マクドナルド！','…終電までだぜ','俺のおごりだ！',
+      '今日は伝説作るか','今夜は優勝でしょ','まだ帰れるぞ？','胃袋、起きてる？'
+    ];
+
+    const retryMessages = ['逃げたな？','今日は守りか〜','まだビビってる','お前、チェーン店派だろ'];
+
+    const commentContainer = document.getElementById('comments');
+    const home = document.getElementById('home-screen');
+    const rouletteScreen = document.getElementById('roulette-screen');
+    const resultScreen = document.getElementById('result-screen');
+    const wheel = document.getElementById('roulette-wheel');
+    const dartHit = document.getElementById('dart-hit');
+    const typingLine = document.getElementById('typing-line');
+    const storeDesc = document.getElementById('store-desc');
+    const rouletteLabel = document.getElementById('roulette-label');
+    const rouletteStatus = document.getElementById('roulette-status');
+    const messageEl = document.getElementById('message');
+
+    let currentStore = null;
+    let currentType = '';
+    let typingTimer = null;
+    let wheelAngle = 0;
+
+    function createComment(text) {
+      const div = document.createElement('div');
+      div.className = 'comment';
+      div.innerText = text;
+      div.style.top = Math.random() * 100 + '%';
+      div.style.animationDuration = (8 + Math.random() * 12) + 's';
+      div.style.fontSize = (12 + Math.random() * 12) + 'px';
+      commentContainer.appendChild(div);
+      setTimeout(() => div.remove(), 20000);
+    }
+
+    setInterval(() => createComment(comments[Math.floor(Math.random() * comments.length)]), 700);
+
+    function showScreen(screenName) {
+      home.classList.remove('active');
+      rouletteScreen.classList.remove('active');
+      resultScreen.classList.remove('active');
+      document.getElementById(screenName).classList.add('active');
+    }
+
+    function pickStore() {
+      return stores[Math.floor(Math.random() * stores.length)];
+    }
+
+    function animateTypingAndReveal(storeName) {
+      clearTimeout(typingTimer);
+      typingLine.innerHTML = '_<span class="cursor">|</span>';
+
+      const typoFrames = ['_','_','__','_','＿','_','__'];
+      let index = 0;
+      const glitchText = 'けんさくちゅう';
+      const target = storeName;
+
+      const step = () => {
+        if (index < typoFrames.length) {
+          typingLine.innerHTML = `${typoFrames[index]}<span class="cursor">|</span>`;
+          index += 1;
+          typingTimer = setTimeout(step, 120);
+          return;
+        }
+        const chars = glitchText.split('');
+        let typed = '';
+        let i = 0;
+        const typeNext = () => {
+          if (i < chars.length) {
+            typed += chars[i];
+            typingLine.innerHTML = `${typed}<span class="cursor">|</span>`;
+            i += 1;
+            typingTimer = setTimeout(typeNext, 65);
+          } else {
+            typingTimer = setTimeout(() => {
+              let reveal = 0;
+              const revealTimer = setInterval(() => {
+                const nextText = target.slice(0, reveal);
+                typingLine.innerHTML = `${nextText}<span class="cursor">|</span>`;
+                reveal += 1;
+                if (reveal > target.length) {
+                  clearInterval(revealTimer);
+                  typingLine.innerHTML = target;
+                }
+              }, 80);
+            }, 260);
+          }
+        };
+        typeNext();
+      };
+      step();
+    }
+
+    function startRoulette(type) {
+      currentType = type;
+      messageEl.innerText = '';
+      rouletteLabel.innerText = 'ルーレット回転中...';
+      rouletteStatus.innerText = '次の店、選んでます';
+      dartHit.classList.remove('show');
+      wheel.classList.remove('roulette-spin');
+      wheel.style.setProperty('--final-rotation', '0deg');
+      wheel.style.transform = 'rotate(0deg)';
+      showScreen('roulette-screen');
+
+      currentStore = pickStore();
+      const segmentIndex = stores.findIndex(s => s.name === currentStore.name);
+      const segmentAngle = 360 / stores.length;
+      const targetCenter = segmentAngle * segmentIndex + segmentAngle / 2;
+      const spins = 4 + Math.floor(Math.random() * 3);
+      wheelAngle = 360 * spins + (360 - targetCenter);
+      wheel.style.setProperty('--final-rotation', `${wheelAngle}deg`);
+
+      requestAnimationFrame(() => wheel.classList.add('roulette-spin'));
+
+      setTimeout(() => {
+        dartHit.classList.add('show');
+        rouletteLabel.innerText = '決定';
+        rouletteStatus.innerText = `${type}で選出`;
+      }, 1800);
+
+      setTimeout(() => {
+        showScreen('result-screen');
+        storeDesc.innerText = `${type}で選出 ・ ${currentStore.desc}`;
+        animateTypingAndReveal(currentStore.name);
+      }, 2100);
+    }
+
+    function goStore() {
+      const msg = messages[Math.floor(Math.random() * messages.length)];
+      messageEl.innerText = msg;
+      setTimeout(() => {
+        const query = encodeURIComponent(currentStore?.name || '居酒屋');
+        window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
+      }, 1200);
+    }
+
+    function retry() {
+      const msg = retryMessages[Math.floor(Math.random() * retryMessages.length)];
+      messageEl.innerText = msg;
+      setTimeout(() => {
+        showScreen('home-screen');
+        messageEl.innerText = '';
+        typingLine.innerText = '';
+      }, 1000);
+    }
+
+    function shareResult(platform) {
+      const text = `【はしご酒ルーレット】${currentStore ? currentStore.name : '次の店'} / ${currentType || 'ルーレット'}で決定`;
+      const url = location.href;
+      const shareText = `${text}\n${url}`;
+      if (navigator.share) {
+        navigator.share({ title: 'はしご酒ルーレット', text, url }).catch(() => {});
+        return;
+      }
+      const encoded = encodeURIComponent(shareText);
+      window.open(`https://x.com/intent/tweet?text=${encoded}`, '_blank');
+    }
+  </script>
+</body>
+</html>
