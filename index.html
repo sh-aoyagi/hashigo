@@ -236,7 +236,7 @@
           <div class="store-desc" id="store-desc"></div>
           <div class="action-title">…行っちゃう？</div>
           <div class="action-buttons">
-            <button class="action-btn" onclick="goStore()">行っちゃう</button>
+            <a id="go-btn" class="action-btn" href="#" target="_blank" rel="noopener">行っちゃう</a>
             <button class="action-btn ghost" onclick="retry()">やり直す</button>
           </div>
           <div class="message" id="message"></div>
@@ -472,16 +472,15 @@
           : `${type}で選出（デモモード）`;
         storeDesc.innerText = label;
         animateTyping(currentStore.name);
+        // 食べログ検索URLを行っちゃうボタンに直接セット（iOS Safari対応）
+        const tabelogUrl = `https://tabelog.com/rstLst/food/${encodeURIComponent(currentStore.name)}/`;
+        document.getElementById('go-btn').href = tabelogUrl;
       }, 2100);
     }
 
     // ── 行っちゃう ──
     function goStore() {
-      messageEl.innerText = MESSAGES[Math.floor(Math.random() * MESSAGES.length)];
-      const url = (currentStore.lat && currentStore.lon)
-        ? `https://www.google.com/maps?q=${currentStore.lat},${currentStore.lon}`
-        : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(currentStore.name)}`;
-      setTimeout(() => { location.href = url; }, 1200);
+      // 使わないが残しておく（a タグに移行済み）
     }
 
     // ── やり直す ──
