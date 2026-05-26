@@ -245,9 +245,8 @@
           <div class="store-details" id="store-details"></div>
           <div class="action-title">どうする？</div>
           <div class="action-buttons">
+            <a id="btn-tabelog" class="action-btn" href="#" target="_blank" rel="noopener">🍽 食べログで見る</a>
             <a id="btn-tel"     class="action-btn tel-btn" href="#" style="display:none">📞 電話して予約</a>
-            <a id="btn-map"     class="action-btn" href="#" target="_blank" rel="noopener">🗺 地図で開く</a>
-            <a id="btn-tabelog" class="action-btn ghost" href="#" target="_blank" rel="noopener">🍽 食べログで見る</a>
             <button class="action-btn ghost" onclick="retry()">やり直す</button>
           </div>
           <div class="share-row">
@@ -501,13 +500,6 @@
         } else {
           telBtn.style.display = 'none';
         }
-
-        // 地図ボタン — Apple Maps URL（iOS でネイティブアプリが直接開く・popupなし）
-        const mapBtn = document.getElementById('btn-map');
-        const mapQ = encodeURIComponent(currentStore.name);
-        mapBtn.href = currentStore.lat
-          ? `https://maps.apple.com/?q=${mapQ}&sll=${currentStore.lat},${currentStore.lon}&z=17`
-          : `https://maps.apple.com/?q=${mapQ}`;
 
         // 食べログボタン
         document.getElementById('btn-tabelog').href =
