@@ -478,12 +478,10 @@
     // ── 行っちゃう ──
     function goStore() {
       messageEl.innerText = MESSAGES[Math.floor(Math.random() * MESSAGES.length)];
-      setTimeout(() => {
-        const url = (currentStore.lat && currentStore.lon)
-          ? `https://www.google.com/maps?q=${currentStore.lat},${currentStore.lon}`
-          : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(currentStore.name)}`;
-        window.open(url, '_blank');
-      }, 1200);
+      const url = (currentStore.lat && currentStore.lon)
+        ? `https://www.google.com/maps?q=${currentStore.lat},${currentStore.lon}`
+        : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(currentStore.name)}`;
+      setTimeout(() => { location.href = url; }, 1200);
     }
 
     // ── やり直す ──
